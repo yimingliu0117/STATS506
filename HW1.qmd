@@ -1,0 +1,163 @@
+---
+title: "HW1"
+format: html
+---
+
+## Problem 1: Wine Data
+
+**(a)** Firstly,read data file and make it to be a dataframe. Then use names() function to give the column names.
+
+```{r}
+#getwd() --check about the working destination
+winedata <- read.table("wine.data", sep = ",")
+df1 <- data.frame(winedata)
+
+names(df1) <- c("Class", "Alcohol", "Malic_acid", "Ash", "Alcalinity_of_ash", "Magnesium", "Total_phenols", "Flavanoids", "Nonflavanoid_phenols", "Proanthocyanins", "Color_intensity", "Hue", "Diluted_wines", "Proline")
+df1
+```
+
+**(b)** Use table() function to calculate class numbers and do comparison.
+
+```{r}
+#count the number according to classes
+count_class_df1 <- table(df1$Class)
+
+#check the data and mode
+count_class_df1
+mode(count_class_df1)
+
+#input the number from wine.names file
+count_class_winemames <- c("Class 1" = 59, "Class2" = 71, "class3" = 48)
+
+#check the data and mode
+count_class_winemames
+mode(count_class_winemames)
+
+#check if they are the same
+all(count_class_df1 == count_class_winemames)
+                                    
+```
+
+**(c1)** The correlation between alcohol content and color intensity is 0.5463642.
+
+```{r}
+#use cor() function to calculate 
+correlation_alcohol_color <- cor(df1$Alcohol,df1$'Color_intensity') 
+correlation_alcohol_color
+```
+
+**(c2)** The highest is class1 and the lowest is class2.
+
+```{r}
+#split the data into 3 different dataframes for the next step
+#learn the split() function from google
+wine_class <- split(df1, df1$Class)
+wine_class
+
+#use sapply() function to calculate different correlations
+correlations_class <- sapply(wine_class, function(df) {
+  cor(df$Alcohol, df$Color_intensity)
+})
+correlations_class
+
+#learn which.max() function from google
+Highest_Cor <- names(which.max(correlations_class))
+Lowest_Cor <- names(which.min(correlations_class))
+Highest_Cor
+Lowest_Cor
+```
+
+**(c3)** The alcohol content is 14.34.
+
+```{r}
+#find the max color_intensity row
+highest_color_inten <- df1[which.max(df1$Color_intensity), ]
+highest_color_inten
+
+#get the alcohol content
+highest_color_inten$Alcohol
+
+```
+
+**(c4)** It's 8.426966%
+
+```{r}
+#get the number of qualified wine and the number of total
+num_higher_proanth <- sum(df1$Proanthocyanins > df1$Ash)
+num_ttl <- dim(df1)[1]
+
+#get the percentage
+(num_higher_proanth/num_ttl)*100
+```
+
+**(d)** Get different part and combine them.
+
+```{r}
+#get overall averages and class-averages
+overall_averages <- colMeans(df1[,-1])
+wine_class <- split(df1, df1$Class)
+
+class_averages <- sapply(wine_class, function(df) {
+  colMeans(df[,-1])
+})
+
+#use t() function to reverse the row and column
+#use rbind() function to combine dataframes
+#learn those functions from google
+class_averages <- t(class_averages)
+averages_table <- rbind("Overall" = overall_averages, class_averages)
+averages_table
+```
+
+**(e)** Class1 has significantly higher phenol levels compared to Class2 and Class3.Class2 has significantly higher phenol levels compared to Class3.
+
+```{r}
+#define the t-test function
+wine_t_tests <- function(class1, class2) {
+  set1 <- subset(df1, Class == class1)$Total_phenols
+  set2 <- subset(df1, Class == class2)$Total_phenols
+  t.test(set1, set2)
+}
+
+#the test process
+list("class1_2" = wine_t_tests(1, 2),
+     "Class1_3" = wine_t_tests(1, 3),
+     "Class2_3" = wine_t_tests(2, 3)
+)
+```
+
+## Problem 2: AskAManager
+
+**(a)** Import the Data
+
+```{r}
+Askamanager <- read.table("AskAManager.csv", sep = ",")
+df2 <- data.frame(Askamanager)
+df2
+```
+
+**(b)**
+```{r}
+names(df2) <- c()
+```
+
+
+
+
+
+## Running Code
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+1 + 1
+```
+
+You can add options to executable code like this
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
