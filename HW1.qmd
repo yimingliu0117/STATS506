@@ -136,16 +136,82 @@ df2 <- data.frame(Askamanager)
 df2
 ```
 
-**(b)**
+**(b)** Use NULL to clear all variable names,then put in new names.
+
 ```{r}
-names(df2) <- c()
+#use NULL to clear all variable names
+names(df2) <- NULL
+
+#give simple names
+names(df2) <- c("Count", "Time", "Old", "Industry", "Job", "Add_Title", "Annual_Salary", "Add_Monetary", "Currency", "Other Currency", "Add_income_context", "Country", "State", "City", "Years_overall", "Years_field", "Education_lev", "Gender", "Race")
+
+df2
+```
+
+**(c)** The row number of the raw data is 28062, and that of the filtered data is 23374.
+
+```{r}
+#confirming the number of observations
+number_observations <- dim(df2)[1]
+number_observations
+
+#Restrict the data to those being paid in US dollars (USD)
+usd_df <- subset(df2, Currency == "USD")
+number_usd <- dim(usd_df)[1]
+
+```
+
+**(d)**
+
+```{r}
+
+
+```
+
+**(e)** The new sample size is 26837, and the stats information is showed.
+
+```{r}
+# Use summary() function to get the original information
+summary(df2$Annual_Salary)
+dim(df2)[1]
+
+# filter unreal data and get the new information
+threhold_df2 <- subset(df2, Annual_Salary < 200000 & Annual_Salary > 1000)
+summary(threhold_df2$Annual_Salary)
+
+dim(threhold_df2)[1]
+```
+
+## Problem 3: Palindromic Numbers
+
+**a**
+
+
+```{r}
+isPalindromic <- function(a){
+    #make sure the input must be a positive integer
+    if (!is.numeric(a) | a <= 0 | a != as.integer(a)) {
+    stop("Input must be a positive integer.")
+    }
+  
+    a_str <- as.character(a)
+  
+    reversed_a <- paste(rev(strsplit(as.character(a), NULL)[[1]]), collapse = "")
+  
+  # Check if the original and reversed strings are the same
+  is_palindromic <- (a_str == reversed_a)
+  
+   return(list(
+    isPalindromic = is_palindromic,
+    reversed = reversed_a
+  ))
+}
+
+isPalindromic(123421)
 ```
 
 
 
-
-
-## Running Code
 
 When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
 
