@@ -1,5 +1,5 @@
 ---
-title: "HW1"
+title: "HW1_Yiming Liu"
 format: html
 ---
 
@@ -76,7 +76,6 @@ highest_color_inten
 
 #get the alcohol content
 highest_color_inten$Alcohol
-
 ```
 
 **(c4)** It's 8.426966%
@@ -158,14 +157,19 @@ number_observations
 #Restrict the data to those being paid in US dollars (USD)
 usd_df <- subset(df2, Currency == "USD")
 number_usd <- dim(usd_df)[1]
-
 ```
 
-**(d)**
+**(d)** Find people whose age is umder 18 and delete them.
 
 ```{r}
+#confirming the number of observations
+number_observations <- dim(df2)[1]
+number_observations
 
+#delete people under 18
+df_above_18 <- df2[df2$Old != "under 18",]
 
+dim(df_above_18)[1]
 ```
 
 **(e)** The new sample size is 26837, and the stats information is showed.
@@ -263,18 +267,12 @@ nextPalindrome(7152)
 nextPalindrome(765431537)
 ```
 
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
-```{r}
-1 + 1
-```
-
-You can add options to executable code like this
+**c** Find next palindrome
 
 ```{r}
-#| echo: false
-2 * 2
+nextPalindrome(391)
+nextPalindrome(9928)
+nextPalindrome(19272719)
+nextPalindrome(109)
+nextPalindrome(2)
 ```
-
-The `echo: false` option disables the printing of code (only output is displayed).
