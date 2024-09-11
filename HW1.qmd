@@ -13,7 +13,6 @@ winedata <- read.table("wine.data", sep = ",")
 df1 <- data.frame(winedata)
 
 names(df1) <- c("Class", "Alcohol", "Malic_acid", "Ash", "Alcalinity_of_ash", "Magnesium", "Total_phenols", "Flavanoids", "Nonflavanoid_phenols", "Proanthocyanins", "Color_intensity", "Hue", "Diluted_wines", "Proline")
-df1
 ```
 
 **(b)** Use table() function to calculate class numbers and do comparison.
@@ -52,7 +51,6 @@ correlation_alcohol_color
 #split the data into 3 different dataframes for the next step
 #learn the split() function from google
 wine_class <- split(df1, df1$Class)
-wine_class
 
 #use sapply() function to calculate different correlations
 correlations_class <- sapply(wine_class, function(df) {
@@ -72,7 +70,6 @@ Lowest_Cor
 ```{r}
 #find the max color_intensity row
 highest_color_inten <- df1[which.max(df1$Color_intensity), ]
-highest_color_inten
 
 #get the alcohol content
 highest_color_inten$Alcohol
@@ -132,7 +129,6 @@ list("class1_2" = wine_t_tests(1, 2),
 ```{r}
 Askamanager <- read.table("AskAManager.csv", sep = ",")
 df2 <- data.frame(Askamanager)
-df2
 ```
 
 **(b)** Use NULL to clear all variable names,then put in new names.
@@ -143,8 +139,6 @@ names(df2) <- NULL
 
 #give simple names
 names(df2) <- c("Count", "Time", "Old", "Industry", "Job", "Add_Title", "Annual_Salary", "Add_Monetary", "Currency", "Other Currency", "Add_income_context", "Country", "State", "City", "Years_overall", "Years_field", "Education_lev", "Gender", "Race")
-
-df2
 ```
 
 **(c)** The row number of the raw data is 28062, and that of the filtered data is 23374.
