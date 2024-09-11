@@ -184,33 +184,84 @@ dim(threhold_df2)[1]
 
 ## Problem 3: Palindromic Numbers
 
-**a**
-
+**a** isPalindromic
 
 ```{r}
+#' isPalindromic
+#'
+#' @param a A positive integer
+#'
+#' @return A list with two elements:
+#' \item{isPalindromic}{A logical value indicating if the input is palindromic.}
+#' \item{reversed}{The input number with its digits reversed, as a character string.}
+#'
+#' @examples 
+#' isPalindromic(728827)
+#' isPalindromic(39951)
 isPalindromic <- function(a){
     #make sure the input must be a positive integer
     if (!is.numeric(a) | a <= 0 | a != as.integer(a)) {
     stop("Input must be a positive integer.")
     }
   
+    #make a to a string and cut it into pieces
     a_str <- as.character(a)
+    split_a <- strsplit(as.character(a), NULL)
+    
+    #reverse the pieces and combine the string
+    rev_a <- rev((split_a)[[1]])
+    reversed_a <- paste(rev_a, collapse = "")
   
-    reversed_a <- paste(rev(strsplit(as.character(a), NULL)[[1]]), collapse = "")
-  
-  # Check if the original and reversed strings are the same
-  is_palindromic <- (a_str == reversed_a)
-  
-   return(list(
-    isPalindromic = is_palindromic,
-    reversed = reversed_a
-  ))
+    # Check if the original and reversed strings are the same
+    is_palindromic <- (a_str == reversed_a)
+
+    # return the list
+    return(list(isPalindromic = is_palindromic,
+                reversed = reversed_a))
 }
 
-isPalindromic(123421)
+isPalindromic(728827)
+isPalindromic(39951)
 ```
 
+**b** nextPalindrome
 
+```{r}
+#' nextPalindrome
+#'
+#' @param a A positive integer
+#'
+#' @return A vector of length 1 with the next palindromic number greater than the input
+#'
+#' @examples
+#' nextPalindrome(7152)
+#' nextPalindrome(765431537)
+nextPalindrome <- function(a){
+    #make sure the input must be a positive integer
+    if (!is.numeric(a) | a <= 0 | a != as.integer(a)) {
+    stop("Input must be a positive integer.")
+    }
+  
+    #build a function to determine whether the number is palindromic
+    is_palindrome <- function(b){
+      b_str <- as.character(b)
+      split_b <- strsplit(as.character(b), NULL)
+      rev_b <- rev((split_b)[[1]])
+      reversed_b <- paste(rev_b, collapse = "")
+      return(b_str == reversed_b)
+    }
+    
+    #check from the next number until we get the right one
+    c <- a+1
+    while(!is_palindrome(c)){
+      c <- c+1
+    }
+    return(c)
+}
+
+nextPalindrome(7152)
+nextPalindrome(765431537)
+```
 
 
 When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
