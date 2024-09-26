@@ -3,6 +3,12 @@ title: "HW2"
 format: html
 ---
 
+## Import the library
+```{r}
+library(ggplot2)
+library(interactions)
+```
+
 ## Problem 1 - Dice Game
 
 **a** Version 1 Using loop to define the function.
@@ -216,6 +222,14 @@ Let's prove this process using Monte Carlo simulation.
 ```{r}
 num_rolls <- 100000
 
+#' Monte_game
+#'
+#' @param num_rolls 
+#'
+#' @return total winnings
+#'
+#' @examples
+#' Monte_game(100000)
 Monte_game <- function(num_rolls) {
   ttl_win <- 0
   
@@ -238,9 +252,121 @@ Ave_game
 
 ## Problem 2 - Linear Regression
 
-**a**
+**a** Import the csv file and change the column names.
 
 ```{r}
-
+#import the csv file
+#check the original column names
+cars <- read.csv("cars.csv", sep = ",", header = TRUE)
+colnames(cars)
 ```
 
+```{r}
+#input the new colnames
+colnames_new <- c("Dim_Height",
+                  "Dim_Length",
+                  "Dim_Width",
+                  "Eng_Driveline",
+                  "Eng_Type",
+                  "Eng_Hybrid",
+                  "Eng_Gears",
+                  "Eng_Transmission",
+                  "Fuel_City",
+                  "Fuel_Type",
+                  "Fuel_Highway",
+                  "Iden_Classification",
+                  "Iden_ID",
+                  "Iden_Make",
+                  "Iden_Model_Year",
+                  "Iden_Year",
+                  "Eng_Horsepower",
+                  "Eng_Torque"
+)
+colnames(cars) <- colnames_new
+colnames(cars)
+```
+
+**b** Use subset() function to restrict the data.
+
+```{r}
+cars_gas <- subset(cars, Fuel_Type == "Gasoline")
+cars_gas
+```
+
+**c**First, we observe the characteristics of this dataset through visualization.
+
+```{r}
+#draw the histogram and density plots
+ggplot(cars_gas, aes(x = Fuel_Highway)) +
+  geom_histogram(bins = 60, fill = "blue", alpha = 0.5,  aes(y =after_stat(density))) +
+  geom_density(aes(y =after_stat(density)), color = "yellow", alpha = 0.5, size = 1) +
+  labs(title = "Distribution of Highway MPG", x = "MPG", y = "Density")
+```
+
+Through the visualization, we can intuitively see that this dataset is right-skewed, so I choose to apply the logarithm function for correction.
+
+```{r}
+cars_gas$logMPG <- log(cars_gas$Fuel_Highway)
+
+ggplot(cars_gas, aes(x = logMPG)) +
+  geom_histogram(bins = 60, fill = "blue", alpha = 0.5,  aes(y =after_stat(density))) +
+  geom_density(aes(y =after_stat(density)), color = "yellow", alpha = 0.5, size = 1) +
+  labs(title = "Distribution of Highway MPG", x = "logMPG", y = "Density")
+```
+
+**d** Fit a linear regression model.
+
+```{r}
+#transform the year into factor
+cars_gas$Iden_Year <- as.factor(cars_gas$Iden_Year)
+
+#fit the linear model
+model_1 <- lm(logMPG ~ Eng_Torque + Eng_Horsepower + Dim_Width + Dim_Height + Dim_Length + Iden_Year, data = cars_gas)
+
+#get the summary
+summary(model_1)
+```
+As showed, the relationship between Eng_Torque and logMPG is negative. The torque coefficient is -2.294e-03, which means a unit change in torque will result in -2.294e-03 unit change in logMPG when controlling other factors.
+
+The p-value of torque coefficient is less than 2e-16, which is significant.
+
+**e**
+
+```{r}
+#fit the model with interaction
+model_2 <- lm(logMPG ~ Eng_Torque * Eng_Horsepower + Dim_Width + Dim_Height + Dim_Length + Iden_Year, data = cars_gas)
+
+summary(model_2)
+```
+
+```{r}
+#choose 100, 150, 200 as three values of torque
+interact_plot(model_2, pred = Eng_Torque, 
+              modx = Eng_Horsepower, 
+              pred.values = c(100, 150, 200),
+              at = list(Iden_Year = '2010'),
+              data = cars_gas)
+```
+
+**f** Firstly, I create the matrix model. Then I use the equation beta_hat = (X'X)^-1 X'y to calculate beta_hat.
+
+```{r}
+# Create design matrix
+X <- model.matrix(~ Eng_Torque * Eng_Horsepower + Dim_Width + Dim_Height + Dim_Length + Iden_Year, data = cars_gas)
+
+# Response variable
+y <- cars_gas$logMPG
+
+# Calculate coefficients using matrix algebra
+beta_hat <- solve(t(X) %*% X) %*% t(X) %*% y
+
+# Compare with lm results
+beta_hat
+```
+
+The results from model_2:
+```{r}
+summary(model_2)$coefficients
+```
+
+They are the same.
