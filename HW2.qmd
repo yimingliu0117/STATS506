@@ -1,0 +1,246 @@
+---
+title: "HW2"
+format: html
+---
+
+## Problem 1 - Dice Game
+
+**a** Version 1 Using loop to define the function.
+
+```{r}
+#' play_dice
+#'
+#' @param num_rolls 
+#'
+#' @return total winnings
+#'
+#' @examples
+#' play_dice(10)
+play_dice <- function(num_rolls) {
+  # Set the beginning value
+  ttl_win <- 0
+  cost <- 2
+  
+  # Roll the die 
+  for (i in 1:num_rolls) {
+    roll <- sample(1:6, 1)
+    if (roll == 3 | roll == 5) {
+      ttl_win <- ttl_win + (2 * roll) - 2
+    } else {
+      ttl_win <- ttl_win - cost
+    }
+  }
+  
+  return(ttl_win)
+}
+
+play_dice(10)
+```
+
+**a** Version 2 Using Built-in R Vectorized Functions.
+
+```{r}
+#' play_dice_2
+#'
+#' @param num_rolls 
+#'
+#' @return total winnings
+#'
+#' @examples
+#' play_dice_2(10)
+play_dice_2 <- function(num_rolls) {
+  # Roll the dices at one time and count the winnings
+  rolls <- sample(1:6, num_rolls, replace = TRUE)
+  win <- ifelse(rolls == 3 | rolls == 5, 2 * rolls - 2, -2)
+  ttl_win <- sum(win)
+  
+  return(ttl_win)
+}
+
+play_dice_2(10)
+```
+
+**a** Version 3 Implement this by rolling all the dice into one and collapsing the die rolls into a single table().
+
+```{r}
+#' play_dice_3
+#'
+#' @param num_rolls 
+#'
+#' @return total winnings
+#'
+#' @examples
+#' play_dice_3(10)
+play_dice_3 <- function(num_rolls) {
+  # Roll the dice at one time
+  # Create the table
+  rolls <- sample(1:6, num_rolls, replace = TRUE)
+  roll_table <- table(rolls)
+  
+  # Set the original value
+  ttl_win <- 0
+  cost <- 2
+  
+  # Check all sample numbers in the table
+  # Count total winnings using if-else statement
+  for (roll in 1:6) {
+    # Avoid NA causes error
+    # Learn this from google
+    count <- ifelse(as.character(roll) %in% names(roll_table), roll_table[as.character(roll)], 0)
+    
+    if (roll == 3 | roll == 5) {
+      ttl_win <- ttl_win + (2 * roll * count) - (cost * count)
+    } else {
+      ttl_win <- ttl_win - (cost * count)
+    }
+  }
+  
+  return(ttl_win)
+}
+
+play_dice_3(10)
+```
+
+**a** Version 4 Implement this game by using one of the “apply” functions.
+
+```{r}
+#' play_dice_4
+#'
+#' @param num_rolls 
+#'
+#' @return total winnings
+#'
+#' @examples
+#' play_dice_4(10)
+play_dice_4 <- function(num_rolls) {
+  # Roll the dices at one time
+  rolls <- sample(1:6, num_rolls, replace = TRUE)
+  
+  # Use sapply()function to do this with a list
+  winnings <- sapply(rolls, function(roll) {
+    if (roll == 3 | roll == 5) {
+      return(2 * roll - 2)
+    } else {
+      return(-2)
+    }
+  })
+  
+  ttl_wins <- sum(winnings)
+  
+  return(ttl_wins)
+}
+
+play_dice_4(10)
+```
+
+**b** Input a 3, and once with an input of 3,000. Try these functions.
+
+```{r}
+play_dice(3)
+play_dice_2(3)
+play_dice_3(3)
+play_dice_4(3)
+
+play_dice(3000)
+play_dice_2(3000)
+play_dice_3(3000)
+play_dice_4(3000)
+
+```
+
+**c** Demonstrate that the four versions give the same result. Test with inputs 3 and 3,000.
+
+```{r}
+# Use the same seed to control variation.
+set.seed(42)
+play_dice(3)
+
+set.seed(42)
+play_dice_2(3)
+
+set.seed(42)
+play_dice_3(3)
+
+set.seed(42)
+play_dice_4(3)
+
+set.seed(42)
+play_dice(3000)
+
+set.seed(42)
+play_dice_2(3000)
+
+set.seed(42)
+play_dice_3(3000)
+
+set.seed(42)
+play_dice_4(3000)
+
+```
+
+**d** Use the "microbenchmark" package to demonstrate the speed of the implementations.
+
+```{r}
+library(microbenchmark)
+
+bench_1000 <- microbenchmark(
+  Loop = play_dice(1000),
+  Vectorized = play_dice_2(1000),
+  Table = play_dice_3(1000),
+  Apply = play_dice_4(1000),
+  times = 10
+)
+
+bench_100000 <- microbenchmark(
+  Loop = play_dice(100000),
+  Vectorized = play_dice_2(100000),
+  Table = play_dice_3(100000),
+  Apply = play_dice_4(100000),
+  times = 10
+)
+
+print(bench_1000)
+print(bench_100000)
+```
+
+Loop operations can be very time-consuming, while built-in R vectorized functions can significantly enhance computational efficiency. Using the table() function to simplify the loop process can also notably improve performance.
+
+As the amount of computation increases, the time consumed by different functions grows exponentially.
+
+**e** This game is not a fair game from a mathematical standpoint because players are expected to lose money over time.
+
+The expected money we earned is 1.33, but the cost for one time game is 2, so the net expected earned value is -0.67.
+
+Let's prove this process using Monte Carlo simulation.
+
+```{r}
+num_rolls <- 100000
+
+Monte_game <- function(num_rolls) {
+  ttl_win <- 0
+  
+  for (i in 1:num_rolls) {
+    roll <- sample(1:6, 1) 
+    if (roll %in% c(3, 5)) {
+      winnings <- 2 * roll - 2
+      ttl_win <- ttl_win + winnings
+    } else {
+      ttl_win <- ttl_win - 2 
+    }
+  }
+  
+  return(ttl_win)
+}
+
+Ave_game <- Monte_game(num_rolls) / num_rolls
+Ave_game
+```
+
+## Problem 2 - Linear Regression
+
+**a**
+
+```{r}
+
+```
+
