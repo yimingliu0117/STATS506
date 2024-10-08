@@ -3,6 +3,7 @@ title: "HW1_Yiming Liu"
 format: html
 ---
 
+## Github link https://github.com/yimingliu0117/STATS506
 ## Problem 1: Wine Data
 
 **(a)** Firstly,read data file and make it to be a dataframe. Then use names() function to give the column names.

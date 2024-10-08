@@ -1,0 +1,38 @@
+---
+title: "HW 3"
+format: html
+---
+## Problem 1 - Vision
+
+**a** Firstly, I use function **read.xport()** function to read XPT files. Then I use **inner_join()** function to combine these two files, using the SEQN variable for merging. It is showed that total sample size is now 6,980.
+```{r}
+# Use package "foreign" to read the XPT files
+VIX_D <- read.xport("VIX_D.XPT")
+DEMO_D <- read.xport("DEMO_D.XPT")
+
+# Use function inner_join() to get the combined dataframe
+# Show the row-number is 6980
+Merged_data <- inner_join(VIX_D, DEMO_D, by = "SEQN")
+nrow(Merged_data)
+```
+
+## Quarto
+
+Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
+
+## Running Code
+
+When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+
+```{r}
+1 + 1
+```
+
+You can add options to executable code like this 
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).

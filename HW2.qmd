@@ -3,7 +3,12 @@ title: "HW2"
 format: html
 ---
 
+## Github link
+
+https://github.com/yimingliu0117/STATS506
+
 ## Import the library
+
 ```{r}
 library(ggplot2)
 library(interactions)
@@ -290,7 +295,7 @@ colnames(cars)
 
 ```{r}
 cars_gas <- subset(cars, Fuel_Type == "Gasoline")
-cars_gas
+head(cars_gas)
 ```
 
 **c**First, we observe the characteristics of this dataset through visualization.
@@ -326,11 +331,12 @@ model_1 <- lm(logMPG ~ Eng_Torque + Eng_Horsepower + Dim_Width + Dim_Height + Di
 #get the summary
 summary(model_1)
 ```
+
 As showed, the relationship between Eng_Torque and logMPG is negative. The torque coefficient is -2.294e-03, which means a unit change in torque will result in -2.294e-03 unit change in logMPG when controlling other factors.
 
 The p-value of torque coefficient is less than 2e-16, which is significant.
 
-**e**
+**e** Firstly, I fit the model with interaction. Then choose three values of torque to draw the plot.
 
 ```{r}
 #fit the model with interaction
@@ -348,7 +354,7 @@ interact_plot(model_2, pred = Eng_Torque,
               data = cars_gas)
 ```
 
-**f** Firstly, I create the matrix model. Then I use the equation beta_hat = (X'X)^-1 X'y to calculate beta_hat.
+**f** Firstly, I create the matrix model. Then I use the equation beta_hat = (X'X)\^-1 X'y to calculate beta_hat.
 
 ```{r}
 # Create design matrix
@@ -365,6 +371,7 @@ beta_hat
 ```
 
 The results from model_2:
+
 ```{r}
 summary(model_2)$coefficients
 ```

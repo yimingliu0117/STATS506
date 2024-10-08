@@ -15,6 +15,7 @@ library(knitr)
 library(foreign)
 library(RSQLite)
 library(broom)
+library(ggplot2)
 ```
 
 ## Problem 1 - Vision
@@ -23,6 +24,7 @@ library(broom)
 
 ```{r}
 # Use package "foreign" to read the XPT files
+library(foreign)
 VIX_D <- read.xport("VIX_D.XPT")
 DEMO_D <- read.xport("DEMO_D.XPT")
 
@@ -55,10 +57,6 @@ kable(proportions, format = "html", caption = "Proportion of Respondents Wearing
 **c**
 
 ```{r}
-rm_data$VIQ220_m1
-```
-
-```{r}
 #clean the data that VIQ220 is NA
 #turn the VIQ220 range into 0 to 1
 rm_data <- filter(Merged_data, !is.na(VIQ220))
@@ -78,8 +76,6 @@ summary_list <- lapply(model_list, function(model) {
 })
 odds_ratios <- bind_rows(summary_list)
 kable(odds_ratios, format = "html", digits = 2, caption = "Odds Ratios from Logistic Regression Models")
-
-
 ```
 
 **d** Fistly, we test whether the odds of men and women being wears of glasess/contact lenses for distance vision differs.
@@ -232,4 +228,91 @@ gg("
    ")
 ```
 
+## Problem 3 - US Records
 
+**a** The proportion of email addresses are hosted at a domain with TLD “.com” is 73.2%.
+
+```{r}
+#import the data into R
+data <- read.table("US-500.csv", sep = ",", header = TRUE)
+
+#get domain and tld 
+data$domain <- sub(".*@", "", data$email)
+data$tld <- sub(".*\\.", "", data$domain) 
+
+#compute the proportion
+com_proportion <- sum(data$tld == "com") / nrow(data)
+com_proportion
+```
+
+**b** The proportion of email addresses have at least one non alphanumeric character is 24.8%.
+
+```{r}
+#replace "." and "@" with empty space
+#find other type of non alphanumeric characters
+non_alph_prop <- sum(grepl("[^a-zA-Z0-9]", 
+                           gsub("[.@]", "",data$email))) /                  nrow(data)
+non_alph_prop
+```
+
+**c** Top 5 Area_code is shown as a dataframe.
+
+```{r}
+#extract area_code from phone number 
+data$area_code <- substr(data$phone1, 1, 3)
+
+#make a dataframe 
+#order **area_code** frequency from highest to lowest
+code_counts <- table(data$area_code)
+topcodes <- as.data.frame(code_counts[order(-code_counts)])
+colnames(topcodes) <- c("Area_code", "Count")
+
+#output top 5 area_code 
+head(topcodes, 5)
+```
+
+**d**Produce a histogram of the log of the apartment numbers for all addresses.
+
+```{r}
+#extract apartment number from address
+data$apt_num <- as.numeric(sub(".*#(\\d+)$", 
+                               "\\1", 
+                               sub(".*\\s(\\d+)$", 
+                                   "\\1", 
+                                   data$address))
+)
+
+# Create a histogram of log of apartment numbers
+ggplot(data, aes(x = log(apt_num))) +
+       geom_histogram(bins = 30, 
+                      fill = "yellow", 
+                      alpha = 0.5, 
+                      color = "black") +
+       labs(title = "Histogram of Log of Apartment Numbers",
+            x = "Log(Apartment Number)", 
+            y = "Frequency")
+```
+
+**e**According to the comparison, this is not in accordance with Benford's law.
+
+```{r}
+data$lead_dig <-as.numeric(substr(as.character
+                                  (data$apt_num),
+                                  1, 1))
+# Count leading digits
+leading_digit_counts <- table(data$lead_dig)
+
+# Create a bar plot for leading digits
+barplot(leading_digit_counts / sum(leading_digit_counts), 
+        main = "Leading Digit Distribution of Apartment Numbers", 
+        xlab = "Leading Digit", 
+        ylab = "Proportion")
+
+# Compare with Benford's Law
+benford_proportions <- log10(1 + 1 / (1:9))
+barplot(benford_proportions, names.arg = 1:9, col = "yellow", 
+        main = "Benford's Law Distribution", 
+        xlab = "Leading Digit", 
+        ylab = "Expected Proportion", 
+        add = TRUE)
+```
