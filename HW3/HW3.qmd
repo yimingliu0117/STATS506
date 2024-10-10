@@ -45,7 +45,7 @@ rm_data <- mutate(rm_data, VIQ220_m1 = VIQ220 - 1)
 rm_data <- filter(rm_data, VIQ220_m1 != 8)
 
 #Break the data into ten different intervals
-Merged_data$age_break <- cut(Merged_data$DMDHRAGE,
+rm_data$age_break <- cut(rm_data$DMDHRAGE,
                                breaks = seq(0, 100, by=10),
                                right = FALSE)
 
@@ -111,7 +111,7 @@ rbind(summary_1, summary_2, summary_3)
 ```{r}
 #input the intersaction variable
 #use anova() to compare these two regression models
-model_interaction <- glm(VIQ220_m1 ~ RIAGENDR * RIDAGEYR +                             RIDRETH1 + INDFMPIR, 
+model_interaction <- glm(VIQ220_m1 ~ RIAGENDR * RIDAGEYR + RIDRETH1 + INDFMPIR, 
                          data = rm_data)
 # Output results
 anova(model_interaction, model_3)
@@ -121,11 +121,8 @@ P-Value is 0.6205 from that output, which means it is different between men and 
 
 ```{r}
 #test the propotion difference
-prop_test <- prop.test(x =  c(sum(rm_data$VIQ220_m1[rm_data$RIAGENDR == 1],
-      na.rm = TRUE),                          sum(rm_data$VIQ220_m1[rm_data$RIAGENDR == 2],
-    na.rm = TRUE)),
-                       n = c(sum(rm_data$RIAGENDR == 1),
-                             sum(rm_data$RIAGENDR == 2)))
+prop_test <- prop.test(x = c(sum(rm_data$VIQ220_m1[rm_data$RIAGENDR == 1], na.rm = TRUE),                      sum(rm_data$VIQ220_m1[rm_data$RIAGENDR == 2], na.rm = TRUE)), 
+                       n = c(sum(rm_data$RIAGENDR == 1), sum(rm_data$RIAGENDR == 2)))
 # Output results
 prop_test
 ```
@@ -149,7 +146,9 @@ gg("
 SELECT release_year, 
        COUNT(*) AS movie_count
   FROM film 
- WHERE release_year = (SELECT MIN(release_year) FROM film)  GROUP BY release_year
+ WHERE release_year = (SELECT MIN(release_year) FROM film)
+ GROUP BY release_year
+ 
 ")
 ```
 
@@ -171,6 +170,7 @@ movie_data <- gg("
      JOIN film_category AS fc ON f.film_id = fc.film_id
      JOIN category AS g ON fc.category_id = g.category_id
     GROUP BY g.name
+    
    ")
 
 #use r to find min(movie_count)
@@ -198,6 +198,7 @@ gg("
     GROUP BY g.name
     ORDER BY movie_count
     LIMIT 1;
+    
    ")
 ```
 
@@ -221,6 +222,7 @@ country_data <- gg("
      JOIN address AS a ON ci.city_id = a.city_id
      JOIN customer AS cu ON a.address_id = cu.address_id
     GROUP BY c.country
+    
    ")
 
 #find countries have exactly 13 customers
@@ -248,6 +250,7 @@ gg("
      JOIN customer AS cu ON a.address_id = cu.address_id
     GROUP BY c.country
    HAVING COUNT(DISTINCT cu.customer_id) = 13
+   
    ")
 ```
 
@@ -274,7 +277,7 @@ com_proportion
 #replace "." and "@" with empty space
 #find other type of non alphanumeric characters
 non_alph_prop <- sum(grepl("[^a-zA-Z0-9]", 
-                           gsub("[.@]", "",data$email))) /                  nrow(data)
+                           gsub("[.@]", "",data$email))) /nrow(data)
 non_alph_prop
 ```
 
