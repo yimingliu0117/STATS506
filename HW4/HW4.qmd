@@ -1,0 +1,106 @@
+---
+title: "HW4"
+format: 
+ html:
+   embed-resources: true
+---
+
+## Import the library
+
+```{r}
+install.packages("nycflights13")
+library(nycflights13)
+library(tidyverse)
+```
+
+## Problem 1 - Tidyverse
+
+**a**
+
+```{r}
+#check the two dataframes
+flights_df <- as.data.frame(flights)
+airpotts <- as.data.frame(airports)
+```
+
+Firstly, we get the table for departure_delay.
+
+```{r}
+#Departure-delay Table
+dep_delay <- flights %>%
+  #get the airport names
+  inner_join(airports, by = c("dest" = "faa")) %>%
+  group_by(name) %>%
+  summarise(
+    mean_dep = mean(dep_delay, na.rm = TRUE),
+    median_dep = median(dep_delay, na.rm = TRUE),
+    #count for flights
+    flights = n()
+  ) %>%
+  filter(flights >= 10) %>%
+  arrange(desc(mean_dep)) %>%
+  # Exclude counts for flights
+  select(-flights)
+
+dep_delay
+```
+
+Then, we get the table for arrival delay.
+
+```{r}
+#Arrival-delay Table
+Arr_delay <- flights %>%
+  #inner join two tables
+  #get the airport names
+  inner_join(airports, by = c("dest" = "faa")) %>%
+  group_by(name) %>%
+  summarise(
+    mean_arr = mean(arr_delay, na.rm = TRUE),
+    median_arr = median(arr_delay, na.rm = TRUE),
+    #count for flights
+    flights = n()
+  ) %>%
+  filter(flights >= 10) %>%
+  arrange(desc(mean_arr)) %>%
+  # Exclude counts for flights
+  select(-flights)
+
+Arr_delay
+```
+
+**b**
+
+```{r}
+#check the dataframe
+planes <- as.data.frame(planes)
+
+fast_aircraft_model <- flights %>%
+  #calculate MPH_speed
+  mutate(MPH_speed = distance / (air_time / 60)) %>%
+  group_by(tailnum) %>%
+  summarise(
+    avg_speed = mean(MPH_speed, na.rm = TRUE),
+    flights = n()) %>%
+  #inner join two tables
+  inner_join(planes, by = c("tailnum")) %>%
+  arrange(desc(avg_speed)) %>%
+  slice(1) %>%
+  select(model, avg_speed, flights)
+  
+fast_aircraft_model
+```
+
+## Problem 2 - get_temp()
+
+```{r}
+1 + 1
+```
+
+You can add options to executable code like this
+
+```{r}
+#| echo: false
+2 * 2
+```
+
+The `echo: false` option disables the printing of code (only output is displayed).
