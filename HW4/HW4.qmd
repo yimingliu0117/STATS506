@@ -5,6 +5,10 @@ format:
    embed-resources: true
 ---
 
+## Github link
+
+https://github.com/yimingliu0117/STATS506
+
 ## Import the library
 
 ```{r}
@@ -97,36 +101,48 @@ fast_aircraft_model
 #import the csv
 nnmaps <- read.csv("chicago-nmmaps.csv")
 
-get_temp <- function(month, year, data, celcius = FALSE, average_fn = mean){
-  #check for month-parameter
-  if(is.character(month)){
-    month_1 <- month
-    month <- match(tolower(month), tolower(month.name))
-    if (is.na(month)){
-      month <- match(tolower(month_1), tolower(month.abb))
-    }}
-  if(is.na(month) | month < 1 | month > 12){
-    stop("Please provide a valid month (1-12 or a character name).")
+#' Title
+#'
+#' @param month 
+#' @param year 
+#' @param data 
+#' @param celsius 
+#' @param average_fn 
+#'
+#' @return avg_temp
+get_temp <- function(month, year, data, celsius = FALSE, average_fn = mean){
+   #check for month-parameter
+   #convert month into numeric
+   if (is.character(month)) {
+    month_num <- match(tolower(month), tolower(month.abb))
+    if (is.na(month_num)) {
+      month_num <- match(tolower(month), tolower(month.name))
+    }
+    if (is.na(month_num)) {
+      stop("Please provide a month between 1-12 or a valid month name.")
+    }
+  } else if (is.numeric(month) && month >= 1 && month <= 12) {
+    month_num <- month
+  } else {
+    stop("Month must be between 1 and 12.")
   }
-
+  
   #check for year-parameter
   if(!is.numeric(year) | year <= 0){
     stop("Please provide a valid year.")
   }
   
   find_data <- data %>%
-    mutate(date = ymd(date)) %>%
-    filter(month(date) == as.integer(month), year(date) == year)
+    filter(year == !!year, month_numeric == !!month_num) %>%
+    pull(temp)
   
   #check if the data is empty
-  if (nrow(find_data) == 0) {
+  if (length(find_data) == 0) {
     stop("No data available for the specified month and year.")
   }
   
   #calculate the average temp
-  avg_temp <- find_data %>%
-    summarise(avg_temp = average_fn(temp, na.rm = TRUE)) %>%
-    select(avg_temp)
+  avg_temp <- average_fn(find_data)
   
   #check if we need to change celsius
   if (celsius) {
@@ -135,8 +151,34 @@ get_temp <- function(month, year, data, celcius = FALSE, average_fn = mean){
   
   return(avg_temp)
 }
+```
 
-get_temp("jan", 1997, data = nnmaps)
+```{r}
+get_temp("Apr", 1999, data = nnmaps)
+```
+
+```{r}
+get_temp("Apr", 1999, data = nnmaps, celsius = TRUE)
+```
+
+```{r}
+get_temp(10, 1998, data = nnmaps, average_fn = median)
+```
+
+```{r}
+get_temp(13, 1998, data = nnmaps)
+```
+
+```{r}
+get_temp(2, 2005, data = nnmaps)
+```
+
+```{r}
+get_temp("November", 1999, data =nnmaps, celsius = TRUE,
+         average_fn = function(x) {
+           x %>% sort -> x
+           x[2:(length(x) - 1)] %>% mean %>% return
+         })
 ```
 
 ## Problem 3 - Visualization
