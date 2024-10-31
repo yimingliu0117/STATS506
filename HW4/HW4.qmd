@@ -166,11 +166,21 @@ get_temp(10, 1998, data = nnmaps, average_fn = median)
 ```
 
 ```{r}
-get_temp(13, 1998, data = nnmaps)
+tryCatch({
+  result <- get_temp(13, 1998, data = nnmaps)
+  print(result)
+}, error = function(e) {
+  message("Error encountered: ", e$message)
+})
 ```
 
 ```{r}
-get_temp(2, 2005, data = nnmaps)
+tryCatch({
+  result <- get_temp(2, 2005, data = nnmaps)
+  print(result)
+}, error = function(e) {
+  message("Error encountered: ", e$message)
+})
 ```
 
 ```{r}
