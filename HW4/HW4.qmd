@@ -8,9 +8,10 @@ format:
 ## Import the library
 
 ```{r}
-install.packages("nycflights13")
 library(nycflights13)
 library(tidyverse)
+library(lubridate)
+library(ggplot2)
 ```
 
 ## Problem 1 - Tidyverse
@@ -93,14 +94,129 @@ fast_aircraft_model
 ## Problem 2 - get_temp()
 
 ```{r}
-1 + 1
+#import the csv
+nnmaps <- read.csv("chicago-nmmaps.csv")
+
+get_temp <- function(month, year, data, celcius = FALSE, average_fn = mean){
+  #check for month-parameter
+  if(is.character(month)){
+    month_1 <- month
+    month <- match(tolower(month), tolower(month.name))
+    if (is.na(month)){
+      month <- match(tolower(month_1), tolower(month.abb))
+    }}
+  if(is.na(month) | month < 1 | month > 12){
+    stop("Please provide a valid month (1-12 or a character name).")
+  }
+
+  #check for year-parameter
+  if(!is.numeric(year) | year <= 0){
+    stop("Please provide a valid year.")
+  }
+  
+  find_data <- data %>%
+    mutate(date = ymd(date)) %>%
+    filter(month(date) == as.integer(month), year(date) == year)
+  
+  #check if the data is empty
+  if (nrow(find_data) == 0) {
+    stop("No data available for the specified month and year.")
+  }
+  
+  #calculate the average temp
+  avg_temp <- find_data %>%
+    summarise(avg_temp = average_fn(temp, na.rm = TRUE)) %>%
+    select(avg_temp)
+  
+  #check if we need to change celsius
+  if (celsius) {
+    avg_temp <- (avg_temp - 32) * (5 / 9)
+  }
+  
+  return(avg_temp)
+}
+
+get_temp("jan", 1997, data = nnmaps)
 ```
 
-You can add options to executable code like this
+## Problem 3 - Visualization
 
 ```{r}
-#| echo: false
-2 * 2
+#import the csv
+market <- read.csv("df_for_ml_improved_new_market.csv")
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+**a** Yes, there is. Based on the plot, we observe that **the sales price in USD** shows an overall upward trend over time, but there are significant fluctuations after 2007, with a peak in 2008.
+
+```{r}
+ggplot(market, aes(x = year, y = price_usd)) +
+  stat_summary(fun = mean, geom = "line", color = "purple", alpha = 0.7, size = 1) +
+  stat_summary(fun = mean, geom = "point", color = "blue", size = 2) +
+  labs(
+    title = "Average Sales Price Over Time",
+    x = "Year",
+    y = "Average USD Sales Price"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(hjust = 0.5, size = 14, face = "bold"),
+    axis.title = element_text(size = 10),
+    axis.text = element_text(size = 10)
+  )
+```
+
+**b** Yes. Based on the plot, we can observe that the sales proportion of the Painting category is declining. The Photograph category saw a significant increase in 1999, followed by a stable trend. The Print category started appearing in 2000, with a relatively small but steady share. The Sculpture category reached its lowest proportion in 1999, then increased and stabilized afterward.
+
+```{r}
+#get a new dataframe
+#including years and the counts of items of different genres
+genre_columns <- grep("Genre___", names(market), value = TRUE)
+genre_data <- market %>%
+  select(year, all_of(genre_columns)) %>%
+  group_by(year) %>%
+  summarise(across(everything(), sum))
+
+#transpose the dataframe
+#get the genre-percentage
+genre_1 <- genre_data %>%
+  pivot_longer(cols = -year, names_to = "Genre", values_to = "Count") %>%
+  group_by(year) %>%
+  mutate(Percentage = Count / sum(Count) * 100) %>%
+  mutate(Genre = gsub("Genre___", "", Genre))
+
+ggplot(genre_1, aes(x = factor(year), y = Percentage, fill = Genre)) +
+  geom_bar(stat = "identity") +
+  labs(title = "Distribution of Genre of Art Sales Over Years", x = "Year", y = "Percentage") +
+  theme_minimal() +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_fill_brewer(palette = "Pastel1") +
+  theme(legend.position = "top", 
+        legend.title = element_text(size = 10),
+        plot.title = element_text(hjust = 0.5))
+```
+
+**c**Observing the plot, we can see that the overall trend in art sales prices aligns closely with the trends in sales prices across different categories. The Photograph category is the primary influencing factor on the overall trend, while the price trend of Print artworks often contrasts with the overall price trend.
+
+```{r}
+#get a new dataframe
+#including years and the counts of items of different genres
+genre_2 <- market %>%
+  pivot_longer(cols = starts_with("Genre___"), names_to = "Genre", values_to = "Is_Genre") %>%
+  filter(Is_Genre == 1) %>%
+  mutate(Genre = gsub("Genre___", "", Genre))
+
+#calculate average USD price based on genre
+genre_price <- genre_2 %>%
+  group_by(year, Genre) %>%
+  summarise(avg_price = mean(price_usd, na.rm = TRUE))
+
+ggplot(genre_price, aes(x = year, y = avg_price, color = Genre)) +
+  geom_line(size = 1) +
+  geom_point() +
+  labs(title = "Sales Price Over Time by Genre", x = "Year", y = "Average Sales Price") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5),
+        legend.position = "top", 
+        legend.title = element_text(size = 10)) +
+  scale_color_brewer(palette = "Pastel2")
+```
