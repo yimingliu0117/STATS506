@@ -1,0 +1,490 @@
+---
+title: "HW5"
+format: 
+  html:
+    embed-resources: true
+---
+
+## Github link
+
+https://github.com/yimingliu0117/STATS506
+
+## Import The Library
+
+```{r}
+library(Rcpp)
+library(dplyr)
+library(tidyr)
+library(plotly)
+library(nycflights13)
+library(data.table)
+sourceCpp("gcd_lcm.cpp")
+```
+
+## OOP Programming
+**a**
+```{r}
+#define the S4 class
+setClass("rational", 
+         slots = c(numerator = "numeric", denominator = "numeric"))
+
+#set the rational function
+rational <- function(numerator, denominator) {
+  if (!is.numeric(numerator) || !is.numeric(denominator)) {
+    stop("Both numerator and denominator must be numeric.")
+  }
+  if (denominator == 0) stop("Denominator cannot be zero.")
+  
+  new("rational", numerator = as.integer(numerator), denominator = as.integer(denominator))
+}
+
+```
+
+
+```{r}
+# Define a validity checking function
+validity <- function(object) {
+  # Check for missing (NA) values in numerator or denominator
+  if (any(is.na(object@numerator), is.na(object@denominator))) {
+    return("Numerator and Denominator must not be empty")
+  }
+  
+  # Ensure numerator and denominator are integers
+  if (!is.integer(object@numerator) || !is.integer(object@denominator)) {
+    return("Both Numerator and Denominator must be integers")
+  }
+  
+  # Ensure denominator is not zero
+  if (object@denominator == 0) {
+    return("Denominator cannot be zero")
+  }
+  
+  # Return TRUE if all checks pass
+  return(TRUE)
+}
+
+# Assign the validity function to the class "rational"
+setValidity("rational", validity)
+```
+
+```{r}
+#set the show method
+setMethod(
+  "show",
+  "rational",
+  function(object) {
+    cat(paste(object@numerator, "/", object@denominator, "\n")) # a string
+  }
+)
+```
+
+
+```{r}
+#set the simplify method
+#set a new S4 generic
+setGeneric("simplify", function(object){
+  standardGeneric("simplify")
+})
+
+setMethod("simplify", "rational", function(object) {
+  common <- gcd(abs(object@numerator), abs(object@denominator))
+  object@numerator <- object@numerator / common
+  object@denominator <- object@denominator / common
+  # Keep denominator positive
+  if (object@denominator < 0L) { 
+    object@numerator <- -object@numerator
+    object@denominator <- -object@denominator
+  }
+  return(object)
+})
+```
+
+```{r}
+#set the quotient method
+setGeneric("quotient", function(object, digits = 7){
+  return(standardGeneric("quotient"))
+})
+
+setMethod("quotient", "rational", function(object, digits = 7) {
+  result <- object@numerator / object@denominator
+  print(round(result, digits))
+  return(result)
+})
+```
+
+```{r}
+#Addition
+setMethod(
+  "+",
+  signature(e1 = "rational", e2 = "rational"),
+  function(e1, e2) {
+    # lcm and new denominator at the same time
+    lcm_denominator <- lcm(e1@denominator, e2@denominator)
+    
+    # new numerators
+    numerator1_new <- e1@numerator * (lcm_denominator / e1@denominator)
+    numerator2_new <- e2@numerator * (lcm_denominator / e2@denominator)
+    # the sum of new numerators
+    sum_numerator <- numerator1_new + numerator2_new
+    
+    # simplify the result
+    simplify(rational(sum_numerator, lcm_denominator))
+  }
+)
+
+#subtraction
+setMethod(
+  "-",
+  signature(e1 = "rational", e2 = "rational"),
+  function(e1, e2) {
+    # lcm and new denominator at the same time
+    lcm_denominator <- lcm(e1@denominator, e2@denominator)
+    
+    # new numerators
+    numerator1_new <- e1@numerator * (lcm_denominator / e1@denominator)
+    numerator2_new <- e2@numerator * (lcm_denominator / e2@denominator)
+    # the difference of new numerators
+    diff_numerator <- numerator1_new - numerator2_new
+    
+    # simplify the result
+    simplify(rational(diff_numerator, lcm_denominator))
+  }
+)
+
+#multiplication
+setMethod(
+  "*",
+  signature(e1 = "rational", e2 = "rational"),
+  function(e1, e2) {
+    new_numerator <- e1@numerator * e2@numerator
+    new_denominator <- e1@denominator * e2@denominator
+    simplify(rational(new_numerator, new_denominator))
+  }
+)
+
+
+#division
+setMethod(
+  "/",
+  signature(e1 = "rational", e2 = "rational"),
+  function(e1, e2) {
+    if (e2@numerator == 0) stop("division by zero not allowed")
+    new_numerator <- e1@numerator * e2@denominator
+    new_denominator <- e1@denominator * e2@numerator
+    simplify(rational(new_numerator, new_denominator))
+  }
+)
+```
+
+**b**
+Fistly, we create three objects.
+```{r}
+r1 <- rational(24L, 6L)
+r2 <- rational(7L, 230L)
+r3 <- rational(0L, 4L)
+```
+
+
+```{r}
+r1_show = tryCatch({
+    show(r1)
+  }, error = function(e) { paste("Error with r1:", e$message) })
+```
+
+```{r}
+r3_show = tryCatch({
+    show(r3)
+  }, error = function(e) { paste("Error with r3:", e$message) })
+```
+
+```{r}
+Add_r1_r2 = tryCatch({
+    show(r1 + r2)
+  }, error = function(e) { paste("Error with r1 + r2:", e$message) })
+```
+
+```{r}
+Sub_r1_r2 = tryCatch({
+    show(r1 - r2)
+  }, error = function(e) { paste("Error with r1 - r2:", e$message) })
+```
+
+```{r}
+Multi_r1_r2 = tryCatch({
+    show(r1 * r2)
+  }, error = function(e) { paste("Error with r1 * r2:", e$message) })
+```
+
+```{r}
+Division_r1_r2 = tryCatch({
+    show(r1 / r2)
+  }, error = function(e) { paste("Error with r1 / r2:", e$message) })
+```
+
+```{r}
+Addition_r1_r3 = tryCatch({
+    show(r1 + r3)
+  }, error = function(e) { paste("Error with r1 + r3:", e$message) })
+```
+
+```{r}
+Multiplication_r1_r3 = tryCatch({
+    show(r1 * r3)
+  }, error = function(e) { paste("Error with r1 * r3:", e$message) })
+```
+
+```{r}
+Division_r2_r3 = tryCatch({
+    show(r2 / r3)
+  }, error = function(e) { paste("Error with r2 / r3:", e$message) })
+Division_r2_r3
+```
+
+```{r}
+Quotient_r1 = tryCatch({
+    quotient(r1)
+  }, error = function(e) { paste("Error with quotient(r1):", e$message) })
+```
+
+```{r}
+Quotient_r2 = tryCatch({
+    quotient(r2)
+  }, error = function(e) { paste("Error with quotient(r2):", e$message) })
+```
+
+```{r}
+Quotient_r2_digits_3 = tryCatch({
+    quotient(r2, digits = 3)
+  }, error = function(e) { paste("Error with quotient(r2, digits = 3):", e$message) })
+```
+
+```{r}
+Quotient_r2_digits_3.14 = tryCatch({
+    quotient(r2, digits = 3.14)
+  }, error = function(e) { paste("Error with quotient(r2, digits = 3.14):", e$message) })
+```
+
+```{r}
+Quotient_r2_digits_avocado = tryCatch({
+    quotient(r2, digits = "avocado")
+  }, error = function(e) { paste("Error with quotient(r2, digits = 'avocado'):", e$message) })
+```
+
+```{r}
+Quotient_assignment_q2 = tryCatch({
+    q2 <- quotient(r2, digits = 3)
+    q2
+  }, error = function(e) { paste("Error with q2 assignment:", e$message) })
+```
+
+```{r}
+Quotient_r3 = tryCatch({
+    quotient(r3)
+  }, error = function(e) { paste("Error with quotient(r3):", e$message) })
+```
+
+```{r}
+Simplify_r1 = tryCatch({
+    simplify(r1)
+  }, error = function(e) { paste("Error with simplify(r1):", e$message) })
+Simplify_r1
+```
+
+```{r}
+Simplify_r2 = tryCatch({
+    simplify(r2)
+  }, error = function(e) { paste("Error with simplify(r2):", e$message) })
+Simplify_r2
+```
+
+
+```{r}
+Simplify_r3 = tryCatch({
+    simplify(r3)
+  }, error = function(e) { paste("Error with simplify(r3):", e$message) })
+Simplify_r3
+```
+
+**C**
+```{r}
+# Attempt to create a Rational object with a zero denominator
+tryCatch({
+  invalid_rational <- rational(1, 0)
+}, error = function(e) {
+  cat("Error caught: ", e$message, "\n")
+})
+
+# Attempt to create a Rational object with non-numeric inputs
+tryCatch({
+  malformed_rational <- rational("a", "b")
+}, error = function(e) {
+  cat("Error caught: ", e$message, "\n")
+})
+
+# Attempt to create a Rational object without providing both numerator and denominator
+tryCatch({
+  missing_input_rational <- rational(1)
+}, error = function(e) {
+  cat("Error caught: ", e$message, "\n")
+})
+```
+
+
+
+## Problem 2-plotly
+```{r}
+#import the csv
+market <- read.csv("df_for_ml_improved_new_market.csv")
+```
+
+**a**Regenerate the plot. Based on the plot, we can observe that the sales proportion of the Painting category is declining. The Photograph category saw a significant increase in 1999, followed by a stable trend. The Print category started appearing in 2000, with a relatively small but steady share. The Sculpture category reached its lowest proportion in 1999, then increased and stabilized afterward.
+
+```{r}
+#get a new dataframe
+#including years and the counts of items of different genres
+genre_columns <- grep("Genre___", names(market), value = TRUE)
+genre_data <- market %>%
+  select(year, all_of(genre_columns)) %>%
+  group_by(year) %>%
+  summarise(across(everything(), sum))
+
+#get the genre-percentage
+genre_percentage_data <- genre_data %>%
+  pivot_longer(cols = -year, names_to = "Genre", values_to = "Count") %>%
+  group_by(year) %>%
+  mutate(Percentage = Count / sum(Count) * 100) %>%
+  mutate(Genre = gsub("Genre___", "", Genre))
+
+# 使用 Plotly 创建堆叠条形图
+fig <- plot_ly(
+  genre_percentage_data,
+  x = ~year,
+  y = ~Percentage,
+  color = ~Genre,
+  type = "bar",
+  text = ~paste0(round(Percentage, 1), "%"),
+  textposition = "inside"
+)
+
+fig <- fig %>%
+  layout(
+    title = "Distribution of Genre of Art Sales Over Years",
+    xaxis = list(title = "Year"),
+    yaxis = list(title = "Percentage", ticksuffix = "%"),
+    barmode = "stack",
+    legend = list(title = list(text = "Genre"), orientation = "h")
+  )
+
+fig
+```
+
+**b**Observing the plot, we can see that the overall trend in art sales prices aligns closely with the trends in sales prices across different categories. The Photograph category is the primary influencing factor on the overall trend, while the price trend of Print artworks often contrasts with the overall price trend.
+
+```{r}
+#get a new dataframe
+#including years and the counts of items of different genres
+genre_columns <- grep("Genre___", names(market), value = TRUE)
+sales_data <- market %>%
+  select(year, price_usd, all_of(genre_columns)) %>%
+  pivot_longer(cols = starts_with("Genre___"), names_to = "Genre", values_to = "Is_Genre") %>%
+  filter(Is_Genre == 1) %>%
+  mutate(Genre = gsub("Genre___", "", Genre)) %>%
+  group_by(year, Genre) %>%
+  #calculate average USD price based on genre
+  summarise(Average_Price = mean(price_usd, na.rm = TRUE), .groups = "drop")
+
+#create the figure
+fig <- plot_ly(
+  sales_data,
+  x = ~year,
+  y = ~Average_Price,
+  color = ~Genre,
+  type = "scatter",
+  mode = "lines+markers",
+  text = ~paste("Year:", year, "<br>Genre:", Genre, "<br>Average Price (USD):", round(Average_Price, 2))
+)
+
+fig <- fig %>%
+  layout(
+    title = "Changes in Sales Price Over Time by Genre",
+    xaxis = list(title = "Year"),
+    yaxis = list(title = "Average Price (USD)"),
+    legend = list(title = list(text = "Genre"), orientation = "h")
+  )
+
+fig
+```
+
+## Problem 3-data.table
+
+```{r}
+#check the two dataframes
+flights_dt <- as.data.table(flights)
+airports_dt <- as.data.table(airports)
+```
+
+**a**Firstly, we get the table for departure-delay.
+```{r}
+# Calculate the mean and median departure delay for each airport.
+dep_delay_table <- merge(
+  flights_dt, 
+  airports_dt, 
+  by.x = "dest", 
+  by.y = "faa", 
+  all.x = FALSE, 
+  all.y = FALSE
+)[
+  , .(
+    mean_dep = mean(dep_delay, na.rm = TRUE),
+    median_dep = median(dep_delay, na.rm = TRUE),
+    flights = .N
+  ),
+  by = name
+][flights >= 10  # Exclude airports with fewer than 10 flights.
+][order(-mean_dep)  # Sort in descending order
+][, .(name, mean_dep, median_dep)]
+
+print(dep_delay_table)
+```
+
+Then, we get the table for arrival delay.
+```{r}
+# Calculate the mean and median arrival delay for each airport.
+arr_delay_table <- merge(
+  flights_dt, 
+  airports_dt, 
+  by.x = "dest", 
+  by.y = "faa", 
+  all.x = FALSE, 
+  all.y = FALSE
+)[
+  , .(
+    mean_arr = mean(arr_delay, na.rm = TRUE),
+    median_arr = median(arr_delay, na.rm = TRUE),
+    flights = .N
+  ),
+  by = name
+][flights >= 10  # Exclude airports with fewer than 10 flights.
+][order(-mean_arr)  # Sort in descending order
+][, .(name, mean_arr, median_arr)]  
+
+print(arr_delay_table)
+```
+
+**b**
+```{r}
+top_model <- flights_dt[planes_dt, # merge flights and planes on tailnum
+                        on = .(tailnum)][, `:=`(
+  time = air_time / 60, 
+  # calculate the mph
+  mph = distance / (air_time / 60)
+)][, .(
+  # calculate the avg_speed
+  avg_speed = mean(mph, na.rm = TRUE),
+  # the number of filghts
+  numflights = .N
+), 
+by = model][order(-avg_speed)][1] #order table in descending average mph
+
+print(top_model)
+```
