@@ -1,0 +1,229 @@
+---
+title: "HW6"
+format: 
+ html:
+  embed-resources: true
+---
+
+## Github
+
+https://github.com/yimingliu0117/STATS506
+
+## Import the library
+
+```{r}
+library(DBI)
+library(RSQLite)
+library(dplyr)
+library(parallel)
+library(future)
+library(furrr)
+```
+
+## Stratified Bootstrapping
+
+**a**
+
+```{r}
+#import SQL data
+lahman <- dbConnect(RSQLite::SQLite(), "lahman_1871-2022.sqlite")
+fielding_data <- dbReadTable(lahman, "Fielding")
+
+#calculate the RF value
+fielding_data <- fielding_data %>%
+  filter(InnOuts > 0, !is.na(InnOuts)) %>%
+  mutate(RF = 3 * (PO + A) / InnOuts) %>%
+  filter(!is.na(RF))  # Remove NA data
+
+#calculate the average RF for each team
+team_rf <- fielding_data %>%
+  group_by(teamID) %>%
+  summarise(avg_RF = mean(RF, na.rm = TRUE)) %>%
+  arrange(desc(avg_RF))
+
+#get Top10 team
+top_teams <- team_rf %>%
+  slice_max(avg_RF, n = 10) %>%
+  pull(teamID)
+
+fielding_top <- fielding_data %>%
+  filter(teamID %in% top_teams)
+
+```
+
+```{r}
+unique(fielding_top$teamID)
+```
+
+```{r}
+#' Stratified_bootstrap
+#'
+#' @param data Input parameter
+#' @param n_boot Default argument specifying the number of bootstrap samples to generate 
+#'
+#' @return The function returns a data frame containing the computed statistics for all bootstrap iterations.
+#'
+stratified_bootstrap <- function(data, n_boot = 1000) {
+  team_ids <- unique(data$teamID)
+  boot_results <- replicate(n_boot, {
+    sampled_data <- lapply(team_ids, function(team) {
+      team_data <- data %>% filter(teamID == team)
+      team_data[sample(nrow(team_data), replace = TRUE), ]
+    })
+    boot_sample <- do.call(rbind, sampled_data)
+    boot_sample %>%
+      group_by(teamID) %>%
+      summarise(avg_RF = mean(RF, na.rm = TRUE)) %>%
+      arrange(desc(avg_RF))
+  }, simplify = FALSE)
+    boot_results_df <- bind_rows(boot_results, .id = "bootstrap")
+  return(boot_results_df)
+}
+```
+
+1.Without any parallel processing
+
+```{r}
+set.seed(42)
+boot_1 <- stratified_bootstrap(fielding_top)
+```
+
+2.Using parallel processing with the parallel package
+
+```{r}
+set.seed(42)
+
+#export necessary objects and load required packages in workers
+#load dplyr in each cluster
+cl <- makeCluster(detectCores() - 1)
+clusterExport(cl, c("fielding_top", "stratified_bootstrap"))
+clusterEvalQ(cl, library(dplyr))
+
+#perform parallel bootstrap
+boot_2 <- parLapply(cl, 1:1000, function(i) {
+  stratified_bootstrap(fielding_top, n_boot = 1)
+})
+
+stopCluster(cl)
+
+#combine results
+boot_2 <- bind_rows(boot_2, .id = "bootstrap")
+```
+
+3.Using futures with the future package
+
+```{r}
+set.seed(42)
+
+#use multisession plan with parallel workers
+plan(multisession, workers = detectCores() - 1)
+
+# **future_map_dfr** applies a function to each element of a vector in parallel and combines the results into a single data frame by row
+boot_3 <- future_map_dfr(
+  1:1000,
+  ~ {
+    stratified_bootstrap(fielding_top, n_boot = 1)
+  },
+  .options = furrr_options(seed = TRUE)  #specify seed = TRUE for parallel-safe RNG
+)
+
+#add some functions to avoid warnings
+#resets the future plan to avoid lingering parallel workers.
+plan(sequential)
+#clears unused resources.
+gc()
+```
+
+**b**
+
+```{r}
+#' define the standard errors
+#'
+#' @param boot_results 
+#'
+#' @return descending average RF for Top10 teams
+#'
+#' @examples
+#' results_1 <- calculate_se(boot_1)
+#' results_2 <- calculate_se(boot_2)
+#' results_3 <- calculate_se(boot_3)
+#' 
+calculate_se <- function(boot_results) {
+  boot_results %>%
+    group_by(teamID) %>%
+    summarise(
+      aveg_RF = mean(avg_RF),
+      se_RF = sd(avg_RF)
+    ) %>%
+    filter(teamID %in% top_teams) %>%
+    arrange(desc(aveg_RF))
+}
+
+results_1 <- calculate_se(boot_1)
+results_2 <- calculate_se(boot_2)
+results_3 <- calculate_se(boot_3)
+
+#combine the results
+final_results <- bind_rows(
+  results_1 %>% mutate(method = "Serial"),
+  results_2 %>% mutate(method = "Parallel"),
+  results_3 %>% mutate(method = "Future")
+)
+
+print(final_results)
+```
+
+**c**
+
+```{r}
+#calculate 
+time_1 <- system.time({
+  boot_1 <- stratified_bootstrap(fielding_top, n_boot = 1000)
+})
+
+# 并行计算（parallel 包）的时间
+time_2 <- system.time({
+  cl <- makeCluster(detectCores() - 1) 
+  clusterExport(cl, c("fielding_top", "stratified_bootstrap")) 
+  clusterEvalQ(cl, library(dplyr)) 
+  
+  boot_2 <- parLapply(cl, 1:1000, function(i) {
+    stratified_bootstrap(fielding_top, n_boot = 1)
+  })
+  
+  stopCluster(cl)
+  boot_2 <- bind_rows(boot_2, .id = "bootstrap") # 合并结果
+})
+
+time_3 <- system.time({
+  plan(multisession, workers = detectCores() - 1) # 设置多进程
+  boot_3 <- future_map_dfr(
+    1:1000,
+    ~ {
+      stratified_bootstrap(fielding_top, n_boot = 1)
+    },
+    .options = furrr_options(seed = TRUE)
+  )
+  plan(sequential)
+  gc()
+})
+
+
+time_results <- data.frame(
+  Method = c("Serial", "Parallel", "Future"),
+  User_Time = c(time_1["user.self"], time_2["user.self"], time_3["user.self"]),
+  System_Time = c(time_1["sys.self"], time_2["sys.self"], time_3["sys.self"]),
+  Elapsed_Time = c(time_1["elapsed"], time_2["elapsed"], time_3["elapsed"])
+)
+
+print(time_results)
+```
+
+**Serial execution takes the longest time**:
+For small-scale tasks, the serial method is efficient enough, but as the task size increases, the time cost grows significantly. 
+
+**Parallel and Future methods are faster**:
+As the number of cores increases, parallel efficiency improves, but the overhead from inter-process communication may also grow. 
+
+**Parallel is slightly better than Future**:
+The future method incurs slight additional overhead from managing task scheduling.
