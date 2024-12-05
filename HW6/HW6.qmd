@@ -51,6 +51,7 @@ fielding_top <- fielding_data %>%
 
 ```
 
+Let's check about TOP10 teams.
 ```{r}
 unique(fielding_top$teamID)
 ```
@@ -86,6 +87,7 @@ stratified_bootstrap <- function(data, n_boot = 1000) {
 ```{r}
 set.seed(42)
 boot_1 <- stratified_bootstrap(fielding_top)
+print(boot_1, n = Inf)
 ```
 
 2.Using parallel processing with the parallel package
@@ -108,6 +110,7 @@ stopCluster(cl)
 
 #combine results
 boot_2 <- bind_rows(boot_2, .id = "bootstrap")
+print(boot_2, n = Inf)
 ```
 
 3.Using futures with the future package
@@ -132,6 +135,7 @@ boot_3 <- future_map_dfr(
 plan(sequential)
 #clears unused resources.
 gc()
+print(boot_3, n = Inf)
 ```
 
 **b**
@@ -170,7 +174,7 @@ final_results <- bind_rows(
   results_3 %>% mutate(method = "Future")
 )
 
-print(final_results)
+print(final_results, n = Inf)
 ```
 
 **c**
@@ -219,11 +223,8 @@ time_results <- data.frame(
 print(time_results)
 ```
 
-**Serial execution takes the longest time**:
-For small-scale tasks, the serial method is efficient enough, but as the task size increases, the time cost grows significantly. 
+**Serial execution takes the longest time**: For small-scale tasks, the serial method is efficient enough, but as the task size increases, the time cost grows significantly.
 
-**Parallel and Future methods are faster**:
-As the number of cores increases, parallel efficiency improves, but the overhead from inter-process communication may also grow. 
+**Parallel and Future methods are faster**: As the number of cores increases, parallel efficiency improves, but the overhead from inter-process communication may also grow.
 
-**Parallel is slightly better than Future**:
-The future method incurs slight additional overhead from managing task scheduling.
+**Parallel is slightly better than Future**: The future method incurs slight additional overhead from managing task scheduling.
