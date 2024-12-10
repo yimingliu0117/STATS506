@@ -1,0 +1,138 @@
+---
+title: "Final Project"
+format: 
+  html:
+    embed-resources: true
+---
+
+## Import Library
+```{r}
+# Load required libraries
+library(dplyr)
+library(tidyr)
+library(readr)
+library(ggplot2)
+library(broom)
+```
+
+## Variable-creation
+Import the Medicare Provider Utilization and Payment Data, clean the data, retaining only valid state-level insurance reimbursement data. Use the keywords "visit," "evaluation," and "management" to filter 311 types of primary insurance services, and calculate the **total reimbursement amount** for primary insurance services in each state.
+```{r}
+#Load Medicare Provider Utilization and Payment Data
+medicare_data <- read_csv("Medicare_Physician_Other_Practitioners_by_Geography_and_Service_2022.csv")
+
+#Filter primary care services using relevant HCPCS codes
+primary_care_data <- medicare_data %>% 
+  filter(HCPCS_Cd %in% c("G0439", "G0438", "G0076", "G0081", "G2006", "G9187", "G0084", "G2009", "G0296", "99285", "99284", "99281", "99282", "99283", "99337", "99334", "99335", "99336", "99350", "99347", "99348", "99349", "99212", "99213", "99214", "99215", "G0080", "G0085", "G2005", "G2013", "G0467", "99307", "99308", "99309", "99310", "99304", "99305", "99306", "G0402", "G0077", "G0082", "G2007", "G0083", "G2008", "99327", "99324", "99325", "99326", "99328", "99344", "99341", "99342", "99343", "99345", "99202", "99203", "99204", "99205", "G2083", "G2082", "99211", "G0454", "59425", "59426", "G0088", "G0090", "G0089", "90838", "90833", "90836", "G9484", "G9483", "G9482", "G9488", "G9486", "G9487", "G9489", "G2012", "G2251", "99484", "99439", "99437", "99491", "99490", "G0087", "G0506", "1996", "33949", "33948", "G0109", "G0108", "92072", "94003", "G0246", "99493", "99238", "99239", "94002", "G2214", "G0245", "99492", "G0459", "G0086", "77432", "77435", "77469", "99183", "99458", "99457", "99315", "99316", "94004", "99422", "99423", "99421", "98971", "98972", "98970", "99499", "77399", "G0250", "99427", "99425", "99426", "99424", "G0068", "G2212", "99494", "77431", "77427", "98981", "98980", "97804", "97802", "97803", "97535", "99496", "99495", "90867", "90868", "90869", "93319", "80418", "88350", "88346", "81596", "86077", "93656", "93654", "93653", "75571", "90945", "90947", "92616", "92612", "92614", "92540", "97755", "97167", "97165", "97166", "97161", "97162", "97163", "92597", "97542", "87184", "87181", "87188", "87186", "87187", "92651", "92652", "92653", "93291", "93298", "92284", "88172", "88173", "0106U", "92621", "92620", "92627", "92626", "92625", "93660", "93261", "93290", "93297", "93750", "96133", "96132", "96131", "96130", "93641", "93640", "93288", "93296", "93294", "93289", "93295", "42975", "88319", "92521", "92522", "92523", "92610", "92611", "94664", "93292", "92608", "92607", "92617", "92613", "92615", "81419", "90937", "90935", "74230", "70371", "93024", "93563", "93595", "93596", "93597", "93594", "93593", "G2076", "0272T", "0273T", "G2066", "0418T", "0434T", "85009", "93598", "78608", "78432", "78433", "78459", "78429", "88177", "88155", "0417T", "0435T", "90791", "90792", "0546T", "97168", "97164", "G2010", "0650T", "89320", "89322", "93293", "94681", "94690", "94680", "94014", "94453", "84479", "37253", "37252", "93572", "93571", "92979", "92978", "93662"))
+
+#Filter only rows where Rndrng_Prvdr_Geo_Desc contains valid state names
+#Load valid state names
+valid_states <- c("Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming")
+
+primary_care_data <- primary_care_data %>%
+  filter(Rndrng_Prvdr_Geo_Desc %in% valid_states)
+
+#Aggregate Medicare reimbursement amounts at the state level
+medicare_aggregated <- primary_care_data %>%
+  group_by(Rndrng_Prvdr_Geo_Desc) %>%
+  summarise(total_reimbursement = sum(Avg_Mdcr_Stdzd_Amt, na.rm = TRUE))
+
+```
+
+Import the IRS Income Statistics Data, define the midpoint of the income range as the **median income**. Define the proportion of number of elderly returns to total household Number of returns as the **household elderly population ratio**. 
+
+Integrate the two datasets based on state names.
+```{r}
+#Load IRS Income Statistics
+irs_data <- read_csv("20zpallagi.csv")
+
+#Filter out rows where N1 is 0
+irs_data <- irs_data %>%
+  filter(N1 > 0)
+
+#Calculate median household income by interpolating AGI ranges
+#Use case_when() function to define the value for the specific range
+irs_data <- irs_data %>%
+  mutate(median_income = case_when(
+    agi_stub == 1 ~ 12500,
+    agi_stub == 2 ~ 37500,
+    agi_stub == 3 ~ 62500,
+    agi_stub == 4 ~ 87500,
+    agi_stub == 5 ~ 112500,
+    agi_stub == 6 ~ 250000,
+    TRUE ~ NA_real_
+  ))
+
+#Calculate proportion of elderly population
+#ELDERLY means Number of elderly returns
+#N1 means Number of returns
+irs_data <- irs_data %>%
+  mutate(proportion_elderly = ELDERLY / N1)
+
+#Create a table to merge state names
+state_mapping <- tibble(
+  full_name = c("Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", "Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", "Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", "Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", "Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", "New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", "Wyoming"),
+  abbreviation = c("AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY")
+)
+
+#Map full state names to abbreviations in the Medicare data
+medicare_aggregated <- medicare_aggregated %>%
+  left_join(state_mapping, by = c("Rndrng_Prvdr_Geo_Desc" = "full_name"))
+
+#Merge two datasets
+merged_data <- medicare_aggregated %>%
+  inner_join(irs_data, by = c("abbreviation" = "STATE"))
+```
+
+## Statistical Analysis
+Conduct multivariate regressions, use interaction terms to test whether household income and age structure jointly impact reimbursement volumes.
+```{r}
+#Linear Regression Analysis
+model_1 <- lm(total_reimbursement ~ median_income + proportion_elderly, data = merged_data)
+summary(model_1)
+
+# Interaction Term
+model_2 <- lm(total_reimbursement ~ median_income * proportion_elderly, data = merged_data)
+summary(model_2)
+```
+
+## Visualizations
+Create a scatter plot of median income against total reimbursement amount of primary care services and add a linear regression model fit line. 
+```{r}
+#Scatter plot with regression line for median_income vs total_reimbursement
+ggplot(merged_data, aes(x = median_income, y = total_reimbursement)) +
+  geom_point(color = "pink") +
+  geom_smooth(method = "lm", se = FALSE, color = "skyblue") +
+  labs(title = "Reimbursement vs Median Household Income",
+       x = "Median Household Income",
+       y = "Total Medicare Reimbursement") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+Create a scatter plot of the proportion of elderly population against total reimbursement amount of primary care services and add a linear regression model fit line.
+```{r}
+#Scatter plot for proportion_elderly vs total_reimbursement
+ggplot(merged_data, aes(x = proportion_elderly, y = total_reimbursement)) +
+  geom_point(color = "skyblue") +
+  geom_smooth(method = "lm", se = FALSE, color = "black") +
+  labs(title = "Medicare Reimbursement vs Proportion of Elderly Population",
+       x = "Proportion of Elderly Population",
+       y = "Total Medicare Reimbursement") +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+Using the interaction model, predict the reimbursement amount for each observation in the dataset.
+```{r}
+#Interaction effect visualization
+interaction_plot_data <- merged_data %>%
+  mutate(predicted_reimbursement = predict(model_with_interaction, .))
+
+#Plot predicted values
+interaction_plot <- ggplot(interaction_plot_data, aes(x = proportion_elderly, y = predicted_reimbursement, color = as.factor(median_income))) +
+  geom_line() +
+  labs(title = "Interaction Effect of Median Income and Elderly Population Proportion",
+       x = "Proportion of Elderly Population",
+       y = "Predicted Medicare Reimbursement",
+       color = "Median Income")
+interaction_plot
+```
